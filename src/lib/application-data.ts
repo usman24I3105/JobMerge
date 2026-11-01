@@ -171,3 +171,39 @@ export type Trimmed = z.infer<typeof trimmedSchema>;
 /** ChatMessage.edits */
 export const editsSchema = z.array(unitEditSchema);
 export type UnitEdit = z.infer<typeof unitEditSchema>;
+
+/** ATS text-layer verification report (feature: ats-verify). */
+export const atsReportSchema = z.object({
+  extractor: z.string(),
+  pages: z.number(),
+  passed: z.boolean(),
+  checks: z
+    .object({
+      garbled_characters: z.record(z.string(), z.unknown()).optional(),
+      contact_details: z.record(z.string(), z.unknown()).optional(),
+      reading_order: z.record(z.string(), z.unknown()).optional(),
+      keyword_coverage: z.record(z.string(), z.unknown()).optional(),
+    })
+    .optional(),
+  warnings: z.array(z.string()).optional(),
+  recommendations: z.array(z.string()).optional(),
+  error: z.string().optional(),
+});
+export type AtsReport = z.infer<typeof atsReportSchema>;
+
+/** Posting integrity gate result (feature: posting-guard). */
+export const postingGuardSchema = z.object({
+  clean: z.boolean(),
+  verdict: z.string(),
+  cleanedText: z.string(),
+  findings: z.object({
+    instructionLike: z.array(z.string()),
+    invisibleFlagged: z.number(),
+    invisibleCounts: z.record(z.string(), z.number()),
+    invisibleText: z.array(z.string()),
+    homoglyphWords: z.array(z.string()),
+    hiddenBlocks: z.array(z.string()),
+    tagChars: z.number(),
+  }),
+});
+export type StoredPostingGuard = z.infer<typeof postingGuardSchema>;

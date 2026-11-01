@@ -12,3 +12,6 @@ export { WRITE_EMAIL_VERSION, writeEmail } from "./write-email";
 export { CLASSIFY_REPLY_VERSION, classifyReply, type Classified } from "./classify-reply";
 export { DRAFT_REPLY_VERSION, draftReply, type DraftedReply } from "./draft-reply";
 export { SCORE_POSTING_VERSION, scorePosting, type PostingScore } from "./score-posting";
+export { REVIEW_DRAFT_VERSION, withReview, type DraftReview } from "./review-draft";
+export { scoreBullets, cutToTarget, type ScoredUnit, type ScoredBullet } from "./score-bullets";
+export { INTERVIEW_PREP_VERSION, generateInterviewPrep, type InterviewPrep, type InterviewStage } from "./interview-prep";

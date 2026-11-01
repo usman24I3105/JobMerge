@@ -19,7 +19,7 @@ import {
   type PaperSize,
   type Tone,
 } from "@/generated/prisma/enums";
-import { type Match, type Requirement, type Unit } from "@/lib/application-data";
+import { type AtsReport, type Match, type Requirement, type Unit } from "@/lib/application-data";
 import { EMAIL_UNITS, WRITTEN_EMAIL_UNITS } from "@/lib/application-email";
 import { documentLabels } from "@/lib/document-labels";
 import { defaultFrame, isFrameUnit, isParagraph, withFrame, WRITTEN_FRAME_UNITS } from "@/lib/letter-frame";
@@ -53,8 +53,10 @@ import {
 } from "./actions";
 import { ApplicationHeader } from "./application-header";
 import { ApplicationMenu } from "./application-menu";
+import { AtsReportCard } from "./ats-report-card";
 import { ConversationTab } from "./conversation-tab";
 import { EmailTab, type Attachments } from "./email-tab";
+import { InterviewTab } from "./interview-tab";
 import type { GmailSender } from "./send-with-gmail";
 
 import { JobWatcher } from "./job-watcher";
@@ -159,6 +161,7 @@ export type ApplicationViewProps = {
   /** A reply still being written, e.g. since before a reload. */
   refining: string | null;
   suggestions: RefineSuggestions;
+  atsReport?: AtsReport | null;
 };
 
 /**
@@ -189,6 +192,7 @@ export function ApplicationView({
   includeReferences,
   letterDate,
   score,
+  atsReport,
   initialTab,
   aiReady,
   rewriting: rewritingAtLoad,
@@ -653,6 +657,7 @@ export function ApplicationView({
           )}
           <TabsTrigger value="posting">{score ? `Job posting · ${score.hit}/${score.total} match` : "Job posting"}</TabsTrigger>
           <TabsTrigger value="notes">{notes > 0 ? `Notes · ${notes}` : "Notes"}</TabsTrigger>
+          <TabsTrigger value="interview">Interview prep</TabsTrigger>
         </TabsList>
       </ApplicationHeader>
 
@@ -676,6 +681,7 @@ export function ApplicationView({
                   )}
                   {profile.photo && <PreviewSwitch label="Photo" checked={showPhoto} onCheckedChange={changePhoto} />}
                   {historyButton(DocumentKind.RESUME)}
+                  <AtsReportCard applicationId={application.id} initialReport={atsReport} />
                 </span>
               }
             >
@@ -759,6 +765,12 @@ export function ApplicationView({
 
         <TabsContent value="notes" className="flex min-h-0 min-w-0 flex-[999_1_480px]">
           <NotesTab applicationId={application.id} activity={activity} />
+        </TabsContent>
+
+        <TabsContent value="interview" className="flex min-h-0 min-w-0 flex-[999_1_480px]">
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <InterviewTab applicationId={application.id} company={application.company} role={application.title} />
+          </div>
         </TabsContent>
 
         <VersionHistory

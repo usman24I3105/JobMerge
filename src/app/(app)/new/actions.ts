@@ -11,12 +11,16 @@ import { readPostingJob } from "@/lib/jobs/read-posting";
 import { startJob } from "@/lib/jobs/runner";
 import { writeDocumentsJob } from "@/lib/jobs/write-documents";
 import { fetchPosting } from "@/lib/posting-fetch";
+import { checkPostingIntegrity } from "@/lib/posting-guard";
 import { prisma } from "@/lib/prisma";
 
 /** "Read the posting →": starts reading it in the background and returns the job's id (E7-2). */
 export const startReadingPosting = action(
   z.object({ posting: z.string().trim().min(1, "Paste a job posting first.").max(100_000) }),
-  ({ posting }) => startJob(readPostingJob, { posting }),
+  ({ posting }) => {
+    const guard = checkPostingIntegrity(posting);
+    return startJob(readPostingJob, { posting: guard.cleanedText });
+  },
 );
 
 /**
@@ -90,7 +94,8 @@ export const fetchPostingText = action(z.object({ link: z.string().max(2000) }),
   if (!url) throw new ActionError("Enter the link to the posting first.");
   const fetched = await fetchPosting(url);
   if (!fetched.ok) throw new ActionError(fetched.error);
-  return { text: fetched.text, url: fetched.url };
+  const guard = checkPostingIntegrity(fetched.text);
+  return { text: guard.cleanedText, url: fetched.url, guard };
 });
 
 /** A link as typed, with https:// added when it has no scheme; empty stays empty. */

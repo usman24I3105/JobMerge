@@ -258,10 +258,14 @@ export function NewApplication({ aiReady, writeInClaude = false, samplePosting, 
     const previous = draft.posting;
     update({ posting: result.data.text });
     const site = new URL(result.data.url).hostname.replace(/^www\./, "");
-    toast(
-      `Fetched the posting from ${site}. Check it before reading it.`,
-      previous.trim() ? { action: { label: "Undo", onClick: () => update({ posting: previous }) } } : {},
-    );
+    if (result.data.guard && !result.data.guard.clean) {
+      toast(`Security notice: ${result.data.guard.verdict}. Cleaned suspicious characters.`);
+    } else {
+      toast(
+        `Fetched the posting from ${site}. Check it before reading it.`,
+        previous.trim() ? { action: { label: "Undo", onClick: () => update({ posting: previous }) } } : {},
+      );
+    }
   };
 
   // NEW-5: a missing skill goes into the profile, and the row becomes partly covered.

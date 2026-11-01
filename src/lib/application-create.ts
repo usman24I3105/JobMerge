@@ -11,6 +11,7 @@ import type { WriteDocumentsResult } from "@/lib/jobs/write-documents";
 import { newFrame, withFrame } from "@/lib/letter-frame";
 import { logServerError } from "@/lib/log";
 import { describeTrim, fitResumeToPages } from "@/lib/page-limit";
+import { checkPostingIntegrity } from "@/lib/posting-guard";
 import { prisma } from "@/lib/prisma";
 import { loadProfile } from "@/lib/profile-data";
 import { maxPages } from "@/lib/settings";
@@ -136,6 +137,7 @@ export async function createApplicationFromDocuments({ reading, documents, match
         match,
         matchedWith,
         tone,
+        postingGuardResult: checkPostingIntegrity(reading.posting),
         // "Anything I should know?" becomes the application's first fact (APP-15).
         ...(note.trim() ? { facts: { create: { text: note.trim() } } } : {}),
         language,
@@ -189,7 +191,7 @@ export async function createApplicationFromDocuments({ reading, documents, match
   const limit = maxPages(settings.pageLimit);
   if (limit) {
     try {
-      const { trimmed, fits } = await fitResumeToPages(created.id, profile, limit);
+      const { trimmed, fits } = await fitResumeToPages(created.id, profile, limit, undefined, reading.posting);
       if (trimmed.length > 0 && settings.showDiff) {
         const text = summaryText({ ...summary, list: [...summary.list, ...describeTrim(trimmed, profile, fits, limit)] });
         await prisma.chatMessage.updateMany({ where: { applicationId: created.id, role: "AI", writtenWith: null }, data: { text } });

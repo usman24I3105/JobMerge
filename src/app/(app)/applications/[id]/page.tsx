@@ -3,7 +3,7 @@ import { cache } from "react";
 
 import { activityTimeline } from "@/lib/activity";
 import { isAiConfigured } from "@/lib/ai/config";
-import { editsSchema, matchSchema, matchScore } from "@/lib/application-data";
+import { atsReportSchema, editsSchema, matchSchema, matchScore } from "@/lib/application-data";
 import { loadApplication, loadDocuments, readJson } from "@/lib/application-documents";
 import { formatShortDate } from "@/lib/dates";
 import { resolveFileName } from "@/lib/file-name";
@@ -133,6 +133,7 @@ export default async function ApplicationPage({ params, searchParams }: PageProp
       includeReferences={includeReferences}
       letterDate={letterDate}
       score={match && match.items.length > 0 ? matchScore(match) : null}
+      atsReport={readJson(atsReportSchema, (application as { atsReport?: unknown }).atsReport)}
       initialTab={tabFrom(tab)}
       aiReady={aiReady}
       rewriting={rewriting}

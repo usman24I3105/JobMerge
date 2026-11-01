@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Tone } from "@/generated/prisma/enums";
 import { getAiProvider } from "@/lib/ai";
 import { loadTaskOptions } from "@/lib/ai/task-options";
-import { tailorResume, writeCoverLetter } from "@/lib/ai/tasks";
+import { tailorResume, withReview, writeCoverLetter } from "@/lib/ai/tasks";
 import { extractedSchema, matchSchema, unitsSchema } from "@/lib/application-data";
 import { loadProfile } from "@/lib/profile-data";
 
@@ -36,10 +36,12 @@ export const writeDocumentsJob = defineJob({
     const [provider, options, profile] = await Promise.all([getAiProvider(), loadTaskOptions(), loadProfile()]);
     // "Anything I should know?" is the application's first fact (APP-15).
     const facts = note.trim() ? [note.trim()] : [];
-    const resume = await tailorResume(provider, { profile, extracted, match, facts, posting }, { ...options, signal });
+    const tailor = withReview(tailorResume);
+    const resume = await tailor(provider, { profile, extracted, match, facts, posting }, { ...options, signal });
 
     await step(WRITE_DOCUMENTS_STEPS[1]);
-    const letter = await writeCoverLetter(provider, { profile, extracted, match, tone, facts, posting }, { ...options, signal });
+    const writeLetter = withReview(writeCoverLetter);
+    const letter = await writeLetter(provider, { profile, extracted, match, tone, facts, posting }, { ...options, signal });
 
     return { resume: resume.data, resumeWith: resume.promptVersion, letter: letter.data, letterWith: letter.promptVersion };
   },

@@ -38,8 +38,42 @@ const leaveOut = (units: Unit[], { unit, index }: { unit: Unit; index: number })
   units: units.filter((_, position) => position !== index),
 });
 
+import { scoreBullets } from "@/lib/ai/tasks/score-bullets";
+
 /** The next thing to leave out, or null when there's nothing left to cut. */
-export function nextCut(units: Unit[], profile: ProfileData): Cut | null {
+export function nextCut(units: Unit[], profile: ProfileData, postingText?: string | null): Cut | null {
+  // If postingText is available, use relevance-weighted bullet cutting first
+  if (postingText && postingText.trim().length > 0) {
+    const scoredUnits = scoreBullets(units, postingText);
+    type CandidateBullet = { unitId: string; label: string; bulletIndex: number; score: number; text: string };
+    const candidates: CandidateBullet[] = [];
+
+    for (const su of scoredUnits) {
+      if ((su.id.startsWith("experience:") || su.id.startsWith("project:")) && su.bullets.length > 1) {
+        su.bullets.forEach((b, idx) => {
+          candidates.push({ unitId: su.id, label: su.label, bulletIndex: idx, score: b.combinedScore, text: b.text });
+        });
+      }
+    }
+
+    if (candidates.length > 0) {
+      // Sort lowest score first
+      candidates.sort((a, b) => a.score - b.score);
+      const worst = candidates[0];
+      const targetUnit = units.find((u) => u.id === worst.unitId);
+      if (targetUnit) {
+        const lines = bulletLines(targetUnit.text).split("\n").filter(Boolean);
+        const cutLine = lines[worst.bulletIndex] ?? worst.text;
+        const keptLines = lines.filter((_, idx) => idx !== worst.bulletIndex);
+        const kept = { ...targetUnit, text: keptLines.join("\n") };
+        return {
+          trimmed: { kind: "bullets", unitId: targetUnit.id, label: targetUnit.label, lines: [cutLine] },
+          units: units.map((entry) => (entry.id === targetUnit.id ? kept : entry)),
+        };
+      }
+    }
+  }
+
   const roles = oldestFirst(units, profile.experience, "experience:");
 
   // The oldest role, while more than one is left.
@@ -84,7 +118,13 @@ export async function fitResumeToPages(
   profile: ProfileData,
   maxPages: number,
   pages: (path: string) => Promise<number> = async (path) => countPdfPages(await renderPdf(path)),
+  postingText?: string | null,
 ): Promise<{ trimmed: Trimmed; fits: boolean }> {
+  let resolvedPosting = postingText;
+  if (resolvedPosting === undefined) {
+    const app = await prisma.application.findUnique({ where: { id: applicationId }, select: { postingText: true } });
+    resolvedPosting = app?.postingText ?? null;
+  }
   const fits = async () => (await pages(`/print/resume/${applicationId}`)) <= maxPages;
   let trimmed: Trimmed = [];
   if (await fits()) return { trimmed, fits: true };
@@ -92,7 +132,7 @@ export async function fitResumeToPages(
   for (let cuts = 0; cuts < MAX_CUTS; cuts++) {
     const cut = await updateDocuments(applicationId, async (documents) => {
       const units = documents[DocumentKind.RESUME];
-      const next = units && nextCut(units, profile);
+      const next = units && nextCut(units, profile, resolvedPosting);
       if (!units || !next) return null;
       documents[DocumentKind.RESUME] = next.units;
       return next.trimmed;

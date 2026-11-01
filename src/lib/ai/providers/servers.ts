@@ -61,6 +61,12 @@ export const SERVERS: readonly Server[] = [
     domain: "ollama.com",
     ignoresSchemas: true,
   },
+  {
+    // Groq OpenAI-compatible API (https://api.groq.com/openai/v1)
+    name: "Groq",
+    domain: "groq.com",
+    path: (path) => (path && path.includes("/openai") ? path : "/openai/v1"),
+  },
 ];
 
 /** The entry for the server at `baseURL`, if it's one of them. */

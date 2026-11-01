@@ -456,6 +456,12 @@ model Application {
   facts               Fact[]
   /// Its background jobs, deleted with it (their inputs and results hold the posting and the documents).
   jobs                Job[]
+  /// ATS text-layer verification report for the generated resume PDF (atsReportSchema).
+  /// null = not yet run; populated after the first PDF render (feature: ats-verify).
+  atsReport           Json?
+  /// Result of the posting integrity gate (postingGuardSchema).
+  /// null = not yet checked; populated when the application is created (feature: posting-guard).
+  postingGuardResult  Json?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
 
